@@ -22,8 +22,8 @@ import java.util.Scanner;
  */
 public class ServiceProvider {
     private  static Logger logger = LoggerFactory.getLogger(ServiceProvider.class);
-    protected Hashtable<String , MFConfig> topic2ConfigMapper = null;
-    protected Hashtable<String , MFConfig> jar2ConfigMapper = null;
+    protected Hashtable<String , MFConfig> topic2ConfigMapper = null;   //在读取配置文件的时候会被装载
+    protected Hashtable<String , MFConfig> jar2ConfigMapper = null;      //在读取配置文件的时候会被装载
     protected Hashtable<String , PluginInterface> topic2InstanceMapper = null;
     protected Hashtable<String , PluginInterface> classPath2InstanceMapper = null;
 
@@ -44,7 +44,7 @@ public class ServiceProvider {
         topic2InstanceMapper = new Hashtable<>();
         classPath2InstanceMapper = new Hashtable<>();
     }
-
+    // 初始化 ServiceProvider 此处 是单例模式
     public static ServiceProvider getInstance()
             throws  JSONException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException,
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
@@ -52,6 +52,7 @@ public class ServiceProvider {
         if (null == sp) {
             synchronized (ServiceProvider.class) {
                 if (null == sp) {
+                    //调用构造方法初始化 classPath2InstanceMapper/topic2InstanceMapper/jar2ConfigMapper/topic2ConfigMapper  类
                     sp = new ServiceProvider();
                     sp.prepare();
                 }
@@ -64,12 +65,17 @@ public class ServiceProvider {
             throws JSONException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException,
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
         logger.debug("prepare() called");
+        //初始化 文件监听类
         if ( null == jarWatcher ) {
             synchronized ( JarWatcher.class ) {
                 if ( null == jarWatcher ) {
+                    //执行完该方法之后 topic2ConfigMapper/jar2ConfigMapper 的对象将放入配置文件  //文件类信息
                     mappingConfigReader();
+                    //将当前对象放入jarWatcher对象中
                     jarWatcher = new JarWatcher(this);
+                    //初始化jar包中的类
                     jarWatcher.scanAndLoadPlugin();
+                    //启动线程
                     jarWatcher.start();
 
                     logger.info("configFolder : " + configFolder);
@@ -112,7 +118,7 @@ public class ServiceProvider {
         return null;
     }
 
-
+    //读取文件内容 返回一个String
     public String jsonFileReader(String filePath) throws FileNotFoundException {
         logger.debug("JsonFileReader() called ");
         File file = new File(filePath);
@@ -131,8 +137,9 @@ public class ServiceProvider {
             IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
         logger.debug("mappingConfigReader() called ");
 
-        //add  plugin info from config
+        //得到plugin.json配置文件内容
         String jsonContext  = jsonFileReader(mappingConfigPath);
+        //将json格式的内容字符串，转换为json对象
         JSONArray jsonArray = JSON.parseArray(jsonContext );
         for(int  i = 0; i < jsonArray.size(); i++){
             String version = null;
@@ -141,6 +148,7 @@ public class ServiceProvider {
             String bizTopic = null;
             String args = null;
             JSONObject jsonObject = jsonArray.getJSONObject(i);
+            //将配置文件的内容装载到MFConfig对象
             if(jsonObject.containsKey("ClassPath")
                     && jsonObject.containsKey("JarName")
                     && jsonObject.containsKey("Args")
@@ -150,8 +158,8 @@ public class ServiceProvider {
                 version = jsonObject.get("Version").toString().trim();
                 bizTopic=jsonObject.get("BizTopic").toString().trim();
                 args=jsonObject.get("Args").toString().trim();
-
                 MFConfig mfc = new MFConfig(classPath, jarName, bizTopic, args, version);
+                //将MFConfig对象同时放入topic2ConfigMapper/jar2ConfigMapper 对象
                 this.topic2ConfigMapper.put(bizTopic,mfc);
                 this.jar2ConfigMapper.put(jarName,mfc);
                 logger.info("Mapping Config Info for Jar : " + jarName + "  Loaded ");
@@ -162,14 +170,21 @@ public class ServiceProvider {
     }
 
 
-
-    public void seekMappingConfig(String jarName) throws JSONException,Exception {
+    /**
+     * 根据包名搜索该jar包的配置信息
+     * @param jarName  包名
+     * @throws JSONException
+     * @throws Exception
+     */
+    public void  seekMappingConfig(String jarName) throws JSONException,Exception {
         logger.debug("seekMappingConfig() called ");
 
         //add  plugin info from config
         String JsonContext = null;
+        //将配置文件信息加载到Jsonontext中
         JsonContext = jsonFileReader(mappingConfigPath);
         JSONArray jsonArray = null;
+        //将配置文件字符串转化为JSON格式
         jsonArray = JSON.parseArray(JsonContext);
         for(int  i = 0; i < jsonArray.size(); i++){
             JSONObject jsonObject = jsonArray.getJSONObject(i);

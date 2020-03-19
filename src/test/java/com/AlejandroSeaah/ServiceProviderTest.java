@@ -30,6 +30,7 @@ public class ServiceProviderTest {
         Input input = new Input(topic, value);
         ServiceProvider sp = null;
         try {
+            //这个地方已经将所有jar包初始化成功
             sp = ServiceProvider.getInstance();
         } catch (JSONException e) {
             e.printStackTrace();
