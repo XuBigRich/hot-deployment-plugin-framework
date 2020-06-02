@@ -14,13 +14,6 @@
         <fastjson.version>1.1.15</fastjson.version>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>maven_central</id>
-            <url>http://central.maven.org/maven2/</url>
-        </repository>
-    </repositories>
-
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
