@@ -22,7 +22,9 @@ public class PluginClassLoader extends URLClassLoader {
     public void addURLFile(URL file) {
         logger.debug("addURLFile() called , URL: " + file.toString());
         try {
+            //根据路径创建一个URL连接
             URLConnection uc = file.openConnection();
+            //这个URL连接 属于JarURLConnection
             if (uc instanceof JarURLConnection) {
                 uc.setUseCaches(true);
                 ((JarURLConnection) uc).getManifest();
@@ -32,6 +34,7 @@ public class PluginClassLoader extends URLClassLoader {
             logger.error("Failed to cache plugin JAR file: " + file.toExternalForm());
             logger.error(e.getMessage() );
         }
+        //将指定的URL附加到URL列表中以搜索类和资源。
         addURL(file);
     }
 
